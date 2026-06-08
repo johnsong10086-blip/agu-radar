@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="A股雷达">
+<meta name="theme-color" content="#0a0a14">
+<title>A股启动雷达</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { background:linear-gradient(135deg,#0a0a14 0%,#0d1a2e 50%,#080f1a 100%); min-height:100vh; color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; padding:0 0 40px; padding-top:env(safe-area-inset-top); }
+.wrap { max-width:560px; margin:0 auto; padding:0 16px; }
+.header { padding-top:36px; padding-bottom:20px; }
+.logo-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.logo-icon { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#c0392b,#e74c3c); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.logo-title { font-size:20px; font-weight:700; }
+.logo-sub { font-size:10px; color:#475569; letter-spacing:1.2px; margin-top:1px; }
+.sent-bar { padding:12px 16px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); display:flex; justify-content:space-between; align-items:center; }
+.filters { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+.filter-btns { display:flex; gap:4px; flex-wrap:wrap; }
+.fbtn { padding:6px 11px; border-radius:8px; font-size:11px; font-weight:600; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#64748b; cursor:pointer; }
+.fbtn.on { border-color:#e74c3c; background:rgba(231,76,60,0.2); color:#fca5a5; }
+select { padding:6px 10px; border-radius:8px; font-size:11px; border:1px solid rgba(255,255,255,0.08); background:#0d1a2e; color:#94a3b8; outline:none; }
+.rbtn { width:100%; padding:13px; background:linear-gradient(135deg,#c0392b,#e74c3c); border:none; border-radius:12px; color:#fff; font-weight:700; font-size:14px; cursor:pointer; margin-bottom:16px; box-shadow:0 4px 20px rgba(231,76,60,0.4); }
+.rbtn:active { opacity:0.8; }
+.count { font-size:11px; color:#475569; margin-bottom:12px; display:flex; justify-content:space-between; }
+.cards { display:flex; flex-direction:column; gap:10px; }
+.card { background:rgba(10,15,30,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px 20px; cursor:pointer; position:relative; overflow:hidden; opacity:0; transform:translateY(12px); transition:opacity 0.35s,transform 0.35s; }
+.card.vis { opacity:1; transform:translateY(0); }
+.card:active { opacity:0.9; }
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.code { font-family:monospace; font-size:15px; font-weight:700; color:#fff; letter-spacing:1px; }
+.sbadge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; margin-left:6px; }
+.coname { color:#94a3b8; font-size:13px; margin-top:2px; font-weight:500; }
+.pricecol { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+.price { font-family:monospace; font-size:18px; font-weight:700; color:#f8fafc; }
+.chg { font-size:12px; font-weight:700; }
+.thsbtn { display:flex; align-items:center; gap:4px; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:700; background:linear-gradient(135deg,#c0392b,#e74c3c); border:none; color:#fff; cursor:pointer; width:100%; justify-content:center; margin-top:2px; box-shadow:0 2px 8px rgba(231,76,60,0.35); }
+.thsbtn:active { opacity:0.8; }
+.sigrow { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.sigbars { display:flex; gap:3px; align-items:center; }
+.sigbar { width:8px; border-radius:2px; }
+.badges { display:flex; gap:8px; align-items:center; }
+.rbadge { font-size:10px; padding:2px 8px; border-radius:10px; font-weight:600; }
+.catalyst { font-size:12px; color:#cbd5e1; line-height:1.5; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.04); }
+.detail { display:none; margin-top:12px; border-top:1px solid rgba(255,255,255,0.07); padding-top:12px; }
+.detail.open { display:block; }
+.sigtags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.sigtag { font-size:11px; padding:3px 10px; border-radius:20px; background:rgba(252,165,165,0.1); color:#fca5a5; border:1px solid rgba(252,165,165,0.2); }
+.stats { display:flex; gap:20px; margin-bottom:14px; flex-wrap:wrap; }
+.slabel { font-size:10px; color:#64748b; margin-bottom:2px; }
+.sval { font-family:monospace; font-weight:700; }
+.btnrow { display:flex; gap:8px; }
+.thsbtn2 { display:flex; align-items:center; gap:6px; padding:11px; border-radius:10px; font-size:12px; font-weight:700; background:linear-gradient(135deg,#c0392b,#e74c3c); border:none; color:#fff; cursor:pointer; flex:2; justify-content:center; box-shadow:0 3px 12px rgba(231,76,60,0.3); }
+.thsbtn2:active { opacity:0.8; }
+.cbtn { display:flex; align-items:center; gap:4px; padding:11px; border-radius:10px; font-size:12px; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; cursor:pointer; flex:1; justify-content:center; }
+.cbtn:active { opacity:0.8; }
+.disc { margin-top:28px; padding:12px 16px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); font-size:10px; color:#334155; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">🀄</div>
+      <div>
+        <div class="logo-title">A股启动雷达</div>
+        <div class="logo-sub">沪深两市 · 每日精选10支</div>
+      </div>
+    </div>
+    <div class="sent-bar">
+      <div>
+        <div style="font-size:10px;color:#475569;margin-bottom:3px">今日市场情绪</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span id="sdot" style="width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+          <span id="slabel" style="font-weight:700;font-size:14px"></span>
+        </div>
+      </div>
+      <div id="snote" style="font-size:11px;color:#64748b;text-align:right;max-width:200px;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-btns">
+      <button class="fbtn on" onclick="setFilter('all',this)">全部</button>
+      <button class="fbtn" onclick="setFilter('sh',this)">沪市</button>
+      <button class="fbtn" onclick="setFilter('sz',this)">深市</button>
+      <button class="fbtn" onclick="setFilter('cyb',this)">创业板</button>
+      <button class="fbtn" onclick="setFilter('kcb',this)">科创板</button>
+    </div>
+    <select onchange="setSort(this.value)">
+      <option value="signal">按信号强度</option>
+      <option value="change">按涨跌幅</option>
+      <option value="volume">按量比</option>
+    </select>
+  </div>
+
+  <button class="rbtn" onclick="doRefresh()">🔀 换一批今日精选</button>
+  <div class="count"><span id="cl"></span><span id="cr"></span></div>
+  <div class="cards" id="cards"></div>
+  <div class="disc">⚠️ 免责声明：本应用数据由算法模拟生成，仅供学习研究参考，不构成任何投资建议。股市有风险，投资需谨慎，请在专业投资顾问指导下做出决策。</div>
+</div>
+
+<script>
+var UNI = [
+  // 沪市主板
+  {c:"600519",n:"贵州茅台",s:"白酒",m:"sh",r:"low"},
+  {c:"601318",n:"中国平安",s:"保险",m:"sh",r:"low"},
+  {c:"600036",n:"招商银行",s:"银行",m:"sh",r:"low"},
+  {c:"600900",n:"长江电力",s:"电力",m:"sh",r:"low"},
+  {c:"601166",n:"兴业银行",s:"银行",m:"sh",r:"low"},
+  {c:"600276",n:"恒瑞医药",s:"医药",m:"sh",r:"medium"},
+  {c:"600309",n:"万华化学",s:"化工",m:"sh",r:"medium"},
+  {c:"601888",n:"中国中免",s:"零售",m:"sh",r:"medium"},
+  {c:"600030",n:"中信证券",s:"券商",m:"sh",r:"medium"},
+  {c:"601601",n:"中国太保",s:"保险",m:"sh",r:"low"},
+  {c:"600690",n:"海尔智家",s:"家电",m:"sh",r:"medium"},
+  {c:"600585",n:"海螺水泥",s:"建材",m:"sh",r:"medium"},
+  {c:"601012",n:"隆基绿能",s:"新能源",m:"sh",r:"high"},
+  {c:"600104",n:"上汽集团",s:"汽车",m:"sh",r:"medium"},
+  {c:"601669",n:"中国电建",s:"建筑",m:"sh",r:"medium"},
+  // 深市主板
+  {c:"000858",n:"五粮液",s:"白酒",m:"sz",r:"low"},
+  {c:"000333",n:"美的集团",s:"家电",m:"sz",r:"low"},
+  {c:"000651",n:"格力电器",s:"家电",m:"sz",r:"low"},
+  {c:"000002",n:"万科A",s:"地产",m:"sz",r:"medium"},
+  {c:"001979",n:"招商蛇口",s:"地产",m:"sz",r:"medium"},
+  {c:"000725",n:"京东方A",s:"面板",m:"sz",r:"high"},
+  {c:"000播",n:"比亚迪",s:"新能源",m:"sz",r:"medium"},
+  {c:"002594",n:"比亚迪",s:"新能源",m:"sz",r:"medium"},
+  {c:"000播",n:"宁德时代",s:"电池",m:"sz",r:"medium"},
+  {c:"000100",n:"TCL科技",s:"面板",m:"sz",r:"high"},
+  // 创业板
+  {c:"300750",n:"宁德时代",s:"电池",m:"cyb",r:"medium"},
+  {c:"300014",n:"亿纬锂能",s:"电池",m:"cyb",r:"high"},
+  {c:"300124",n:"汇川技术",s:"工控",m:"cyb",r:"medium"},
+  {c:"300760",n:"迈瑞医疗",s:"医疗器械",m:"cyb",r:"low"},
+  {c:"300015",n:"爱尔眼科",s:"医疗",m:"cyb",r:"medium"},
+  {c:"300059",n:"东方财富",s:"金融科技",m:"cyb",r:"medium"},
+  {c:"300274",n:"阳光电源",s:"新能源",m:"cyb",r:"high"},
+  {c:"300616",n:"尚品宅配",s:"家居",m:"cyb",r:"high"},
+  {c:"300033",n:"同花顺",s:"金融科技",m:"cyb",r:"medium"},
+  {c:"300413",n:"芒果超媒",s:"传媒",m:"cyb",r:"medium"},
+  // 科创板
+  {c:"688981",n:"中芯国际",s:"半导体",m:"kcb",r:"high"},
+  {c:"688111",n:"金山办公",s:"软件",m:"kcb",r:"medium"},
+  {c:"688036",n:"传音控股",s:"消费电子",m:"kcb",r:"medium"},
+  {c:"688008",n:"澜起科技",s:"半导体",m:"kcb",r:"high"},
+  {c:"688012",n:"中微公司",s:"半导体",m:"kcb",r:"high"},
+  {c:"688041",n:"海光信息",s:"芯片",m:"kcb",r:"high"},
+  {c:"688396",n:"华润微",s:"半导体",m:"kcb",r:"high"},
+  {c:"688599",n:"天合光能",s:"新能源",m:"kcb",r:"high"},
+  {c:"688188",n:"柏楚电子",s:"激光",m:"kcb",r:"medium"},
+  {c:"688271",n:"联影医疗",s:"医疗器械",m:"kcb",r:"medium"},
+];
+
+// Fix bad entries
+UNI = UNI.filter(function(u){ return u.c.match(/^\d{6}$/); });
+
+var SIGS = ["突破20日均线","突破60日均线","MACD金叉","RSI超卖反弹","布林带下轨支撑","放量突破压力位","成交量创近期新高","主力资金净流入","底部W形态确认","价格突破整理区间","KDJ金叉共振","均线多头排列","缩量回调后放量","涨停板撬板信号","龙头股联动效应"];
+var CATS = {
+  "白酒":["机构密集调研，上调目标价","旺季动销超预期，库存健康","高端化策略见效，毛利率提升","产能扩张计划获批","出口市场实现突破"],
+  "新能源":["海外订单大幅增长","新一代产品技术发布","产能利用率持续提升","与车企签署长期协议","政策补贴新政受益"],
+  "半导体":["国产替代加速推进","新制程产品良率提升","大客户订单超预期","研发突破关键技术节点","政府专项资金支持"],
+  "医药":["新药临床数据积极","医保谈判成功纳入","海外授权合作签署","仿制药一致性评价通过","创新药审评提速"],
+  "银行":["资产质量持续改善","零售贷款增速亮眼","中间业务收入增长","不良率降至历史低位","数字化转型成效显现"],
+  "家电":["出口订单创历史新高","高端产品占比提升","原材料成本下降改善利润","海外市场加速扩张","以旧换新政策受益"],
+  "电池":["固态电池技术突破","新客户订单落地","产能爬坡顺利","海外建厂计划推进","电芯能量密度提升"],
+  "金融科技":["用户活跃度创新高","AI功能上线受市场认可","机构客户数量快速增长","数据服务收入大增","监管政策边际放松"],
+};
+var DEFCAT = ["基本面改善，机构开始建仓","行业景气度回升，订单增加","技术突破带来业绩拐点","管理层增持，释放积极信号","板块联动，资金轮动流入"];
+
+var MMAP = {sh:"沪市",sz:"深市",cyb:"创业板",kcb:"科创板"};
+var MCOLOR = {sh:"#3b82f6",sz:"#10b981",cyb:"#f59e0b",kcb:"#8b5cf6"};
+var RC = {low:"#10b981",medium:"#f59e0b",high:"#ef4444"};
+var RL = {low:"低风险",medium:"中风险",high:"高风险"};
+var SENTS = [
+  {c:"#ef4444",l:"做多",n:"沪指强势突破，北向资金持续流入，市场情绪高涨"},
+  {c:"#ef4444",l:"做多",n:"热点板块轮动活跃，量能充足，个股机会丰富"},
+  {c:"#fbbf24",l:"震荡",n:"指数窄幅整理，等待方向选择，结构性机会为主"},
+  {c:"#fbbf24",l:"震荡",n:"市场分化明显，资金抱团龙头，精选个股为主"},
+  {c:"#94a3b8",l:"谨慎",n:"量能萎缩，市场观望情绪浓，注意控制仓位"},
+];
+
+var allStocks=[], curFilter="all", curSort="signal", batch=0;
+var URLS=[];
+
+function rng(seed){ var s=seed; return function(){ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
+
+function generate(offset) {
+  var d=new Date();
+  var seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()+offset*113;
+  var r=rng(seed);
+  var pool = curFilter==="all" ? UNI : UNI.filter(function(u){return u.m===curFilter;});
+  if(pool.length<10) pool=UNI;
+  var arr=pool.slice().sort(function(){return r()-0.5;}).slice(0,10);
+  var sent=SENTS[Math.floor(r()*SENTS.length)];
+  var stocks=arr.map(function(u){
+    var chg=(r()*9+0.5)*(r()>0.25?1:-1);
+    var basePrice = u.m==="sh"&&u.c==="600519"?1700 : u.m==="cyb"&&u.c==="300750"?180 : r()*150+5;
+    var price=Math.round(basePrice*(1+(r()-0.5)*0.15)*100)/100;
+    var vol=r()*6+1.2;
+    var sig=Math.floor(r()*4+6);
+    // boost signal if positive change
+    if(chg>3) sig=Math.min(10,sig+1);
+    var sigArr=SIGS.slice().sort(function(){return r()-0.5;}).slice(0,3);
+    var cats=CATS[u.s]||DEFCAT;
+    var cat=cats[Math.floor(r()*cats.length)];
+    var up=r()*0.2+0.08, dn=r()*0.08+0.04;
+    return {
+      code:u.c, name:u.n, sector:u.s, market:u.m,
+      price:price, chg:Math.round(chg*10)/10,
+      vol:Math.round(vol*10)/10, sig:sig,
+      signals:sigArr, cat:cat,
+      tp:Math.round(price*(1+up)*100)/100,
+      sl:Math.round(price*(1-dn)*100)/100,
+      risk:u.r
+    };
+  }).sort(function(a,b){return b.sig-a.sig;});
+  return {date:d.toISOString().split("T")[0], sent:sent, stocks:stocks};
+}
+
+function thsUrl(code) {
+  return "https://stockpage.10jqka.com.cn/"+code;
+}
+
+function renderCards(){
+  var stocks=allStocks.filter(function(s){
+    if(curFilter==="all") return true;
+    return s.market===curFilter;
+  });
+  stocks.sort(function(a,b){
+    if(curSort==="signal") return b.sig-a.sig;
+    if(curSort==="change") return b.chg-a.chg;
+    if(curSort==="volume") return b.vol-a.vol;
+    return 0;
+  });
+  URLS=[];
+  var html="";
+  for(var i=0;i<stocks.length;i++){
+    var s=stocks[i];
+    var mc=MCOLOR[s.market]||"#94a3b8";
+    var rc=RC[s.risk];
+    var isUp=s.chg>=0;
+    URLS.push(thsUrl(s.code));
+    var bars="";
+    for(var b=0;b<10;b++){
+      var ht=b<5?12:18;
+      var bg=b<s.sig?"hsl("+(s.chg>=0?0:220)+",80%,"+(50+b*2)+"%)":"rgba(255,255,255,0.1)";
+      if(s.chg>=0 && b<s.sig) bg="hsl(0,75%,"+(55-b*2)+"%)";
+      bars+='<div class="sigbar" style="height:'+ht+'px;background:'+bg+'"></div>';
+    }
+    var tags=s.signals.map(function(x){return '<span class="sigtag">📊 '+x+'</span>';}).join("");
+    html+='<div class="card" id="c'+i+'" style="border-left:3px solid '+mc+'" onclick="tog('+i+')">'
+      +'<div style="position:absolute;top:0;right:0;width:120px;height:120px;border-radius:50%;transform:translate(40%,-40%);background:radial-gradient(circle,'+mc+'20 0%,transparent 70%);pointer-events:none"></div>'
+      +'<div class="card-top">'
+        +'<div>'
+          +'<div style="display:flex;align-items:center;gap:6px">'
+            +'<span class="code">'+s.code+'</span>'
+            +'<span class="sbadge" style="background:'+mc+'22;color:'+mc+'">'+MMAP[s.market]+'</span>'
+            +'<span class="sbadge" style="background:rgba(255,255,255,0.06);color:#94a3b8">'+s.sector+'</span>'
+          +'</div>'
+          +'<div class="coname">'+s.name+'</div>'
+        +'</div>'
+        +'<div class="pricecol">'
+          +'<div class="price">¥'+s.price.toFixed(2)+'</div>'
+          +'<div class="chg" style="color:'+(isUp?"#ef4444":"#22c55e")+'">'+(isUp?"▲":"▼")+' '+Math.abs(s.chg).toFixed(1)+'%</div>'
+          +'<button class="thsbtn" onclick="event.stopPropagation();go('+i+')">📱 同花顺</button>'
+        +'</div>'
+      +'</div>'
+      +'<div class="sigrow"><div class="sigbars">'+bars+'</div>'
+        +'<div class="badges">'
+          +'<span class="rbadge" style="background:'+rc+'20;color:'+rc+';border:1px solid '+rc+'40">'+RL[s.risk]+'</span>'
+          +'<span style="color:#64748b;font-size:12px">量比 '+s.vol.toFixed(1)+'x</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="catalyst">💡 '+s.cat+'</div>'
+      +'<div class="detail" id="d'+i+'">'
+        +'<div class="sigtags">'+tags+'</div>'
+        +'<div class="stats">'
+          +'<div><div class="slabel">目标价</div><div class="sval" style="color:#ef4444">¥'+s.tp.toFixed(2)+'</div></div>'
+          +'<div><div class="slabel">止损价</div><div class="sval" style="color:#22c55e">¥'+s.sl.toFixed(2)+'</div></div>'
+          +'<div><div class="slabel">信号强度</div><div class="sval" style="color:#fbbf24">'+s.sig+'/10</div></div>'
+        +'</div>'
+        +'<div class="btnrow">'
+          +'<button class="cbtn" onclick="event.stopPropagation();cp(this,\''+s.code+'\')">📋 复制代码</button>'
+          +'<button class="thsbtn2" onclick="event.stopPropagation();go('+i+')">📱 同花顺查看完整行情 →</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }
+  document.getElementById("cards").innerHTML=html;
+  document.getElementById("cl").innerHTML="共 "+stocks.length+" 支 · 点击展开详情";
+  setTimeout(function(){
+    document.querySelectorAll(".card").forEach(function(c,i){
+      setTimeout(function(){c.classList.add("vis");},i*60);
+    });
+  },30);
+}
+
+function tog(i){document.getElementById("d"+i).classList.toggle("open");}
+function setFilter(v,btn){
+  curFilter=v;
+  document.querySelectorAll(".fbtn").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+  doRefresh();
+}
+function setSort(v){curSort=v;renderCards();}
+function go(i){if(URLS[i])window.open(URLS[i],"_blank");}
+function cp(btn,code){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(code).then(function(){btn.textContent="✅ 已复制";setTimeout(function(){btn.textContent="📋 复制代码";},2000);});
+  } else {
+    var ta=document.createElement("textarea");ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
+    btn.textContent="✅ 已复制";setTimeout(function(){btn.textContent="📋 复制代码";},2000);
+  }
+}
+
+function doRefresh(){
+  batch++;
+  var data=generate(batch);
+  allStocks=data.stocks;
+  var sent=data.sent;
+  document.getElementById("sdot").style.cssText="width:8px;height:8px;border-radius:50%;display:inline-block;background:"+sent.c+";box-shadow:0 0 8px "+sent.c;
+  document.getElementById("slabel").style.color=sent.c;
+  document.getElementById("slabel").textContent=sent.l;
+  document.getElementById("snote").textContent=sent.n;
+  var now=new Date();
+  document.getElementById("cr").textContent=data.date+" · 第"+batch+"批";
+  renderCards();
+}
+
+doRefresh();
+</script>
+</body>
+</html>
